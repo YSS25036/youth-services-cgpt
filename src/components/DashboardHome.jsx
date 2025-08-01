@@ -1,3 +1,5 @@
+// In src/components/DashboardHome.jsx
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
@@ -28,6 +30,11 @@ const DashboardHome = () => {
           <h3>Events</h3>
           <p>Create and view events</p>
         </Link>
+        {/* NEW TILE ADDED BELOW */}
+        <Link to="/actions" style={tileStyle}>
+          <h3>Action Tracker</h3>
+          <p>View all assigned tasks</p>
+        </Link>
         <Link to="/assign" style={tileStyle}>
           <h3>Assign Volunteers</h3>
           <p>Map volunteers to events</p>
@@ -38,4 +45,3 @@ const DashboardHome = () => {
 };
 
 export default DashboardHome;
-
