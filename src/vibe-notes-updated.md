@@ -6,11 +6,11 @@ _This markdown captures module ideas, CSV structures, pending items, and spiritu
 
 ## ✅ To-Do Checklist
 
-- [ ] Create a Event Details page that contains multiple collapsible section
+- [x]  Create a Event Details page that contains multiple collapsible section
 		- One is the basic Event Details
 		- Second is the Action Tracker against the event
 		- Third is all related documents for it (linking to a Google drive that has documents)
-- [ ] Create an Action Tracker that is overall and specific to Events
+- [x ] Create an Action Tracker that is overall and specific to Events
 		- Action Tracker fields (Action Owner, Date Assigned, Due Date, Description of Action, Status of Action (In progress, completed, suspended, Yet to Start, Not Applicable)
 		The link to Tracker should be on the Home Page
 		- Each Event has to have actions specific to it and displayed in the Event Details page
@@ -51,6 +51,21 @@ _This markdown captures module ideas, CSV structures, pending items, and spiritu
 ---
 
 ## 🧱 New Module Ideas
+
+- Departments need to be created. The department values are
+	- Communications & Outreach
+	- Volunteer coordination
+	- Programs & Operations
+	- YS Support for Centers,Online
+	- Training & Content
+
+- There are many roles, that are mapped to department. Following are the entries for Roles:
+	Role Name
+	Role Category 	
+	Roles & Responsibilities (string)	
+	Preferred Skills (independent tags that allows multi-select & search)	
+	Time commitment needed (days per week)	
+	Comments (string)
 
 - On the Volunteers page, right on top display a summary of all Volunteers and show a breakup side by side count of men & women 
 - A form with relevant fields to add a new volunteer
@@ -145,3 +160,4 @@ Let this be built in the spirit of seva, with simplicity and sincerity.
 - UI wireframe generated and approved
 - EventParticipation.jsx screen generated
 - Data structure finalized for `event_participation` collection
+

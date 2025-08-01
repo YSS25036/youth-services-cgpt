@@ -39,6 +39,10 @@ const DashboardHome = () => {
           <h3>Assign Volunteers</h3>
           <p>Map volunteers to events</p>
         </Link>
+        <Link to="/roles-manager" style={tileStyle}>
+          <h3>Manage Roles</h3>
+          <p>Manage Roles within corresponding Departments</p>
+        </Link>
       </div>
     </div>
   );
