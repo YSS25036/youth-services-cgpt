@@ -1,44 +1,53 @@
-// src/pages/ActionTrackerPage.jsx
-
-import React, { useState, useEffect } from 'react';
-// ✨ NEW: Import 'addDoc' to add new documents to Firestore.
-import { collection, getDocs, query, orderBy, addDoc, Timestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, getDocs, addDoc, Timestamp, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Link } from 'react-router-dom';
 
 const ActionTrackerPage = () => {
-  // --- STATE MANAGEMENT ---
   const [allActions, setAllActions] = useState([]);
   const [filteredActions, setFilteredActions] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('');
+  // ✅ CHANGED: The status filter state is now an array to hold multiple values.
+  const [statusFilter, setStatusFilter] = useState([]);
   const [ownerFilter, setOwnerFilter] = useState('');
   const [loading, setLoading] = useState(true);
-
-  // ✨ NEW: State to manage the visibility of the "Add Action" form.
   const [showForm, setShowForm] = useState(false);
-  // ✨ NEW: State to hold the data for the new action being created.
   const [formData, setFormData] = useState({
     description: '',
     ownerName: '',
-    dueDate: '', // This will be a string from the date input
-    status: 'Yet to Start', // Set a sensible default status
-    eventId: '', // Optional: To link this action to an event
+    dueDate: '',
+    status: 'Yet to Start',
+    eventId: '',
   });
-  // ✨ NEW: State to hold the list of events for the dropdown.
   const [events, setEvents] = useState([]);
+  const [editingAction, setEditingAction] = useState(null);
+  const formRef = useRef(null);
 
-  // --- DATA FETCHING ---
+  useEffect(() => {
+    if (editingAction) {
+      const formattedDueDate = editingAction.dueDate?.toDate().toISOString().split('T')[0] || '';
+      
+      setFormData({
+        description: editingAction.description || '',
+        ownerName: editingAction.ownerName || '',
+        dueDate: formattedDueDate,
+        status: editingAction.status || 'Yet to Start',
+        eventId: editingAction.eventId || '',
+      });
+      setShowForm(true);
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setFormData({ description: '', ownerName: '', dueDate: '', status: 'Yet to Start', eventId: '' });
+    }
+  }, [editingAction]);
+
   const fetchActionsAndEvents = async () => {
     setLoading(true);
     try {
-      // 1. Fetch all actions (existing logic)
       const actionsQuery = query(collection(db, 'actions'), orderBy('dueDate', 'desc'));
       const actionsSnapshot = await getDocs(actionsQuery);
       const actionsList = actionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setAllActions(actionsList);
-      setFilteredActions(actionsList);
-
-      // ✨ NEW: 2. Fetch all events to populate the dropdown in the form.
+      
       const eventsSnapshot = await getDocs(collection(db, 'events'));
       const eventsList = eventsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setEvents(eventsList);
@@ -54,12 +63,14 @@ const ActionTrackerPage = () => {
     fetchActionsAndEvents();
   }, []);
 
-  // --- FILTERING LOGIC (Unchanged) ---
   useEffect(() => {
     let results = allActions;
-    if (statusFilter) {
-      results = results.filter(action => action.status === statusFilter);
+    
+    // ✅ CHANGED: The filter logic now checks if the action's status is included in the array.
+    if (statusFilter.length > 0) {
+      results = results.filter(action => statusFilter.includes(action.status));
     }
+
     if (ownerFilter) {
       const lowercasedFilter = ownerFilter.toLowerCase();
       results = results.filter(action =>
@@ -68,61 +79,70 @@ const ActionTrackerPage = () => {
     }
     setFilteredActions(results);
   }, [statusFilter, ownerFilter, allActions]);
-
-  // --- ✨ NEW: FORM HANDLING LOGIC ---
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddAction = async () => {
-    // Basic validation to ensure a description is present.
+  const handleFormSubmit = async () => {
     if (!formData.description) {
       alert('Please enter a description for the action.');
       return;
     }
-
+    const processedData = {
+      ...formData,
+      dueDate: formData.dueDate ? Timestamp.fromDate(new Date(formData.dueDate)) : null,
+    };
     try {
-      // Prepare the data for Firestore.
-      const newAction = {
-        ...formData,
-        // Convert the string date from the form into a Firestore Timestamp.
-        dueDate: formData.dueDate ? Timestamp.fromDate(new Date(formData.dueDate)) : null,
-        // Set the 'assignedDate' to the current time.
-        assignedDate: Timestamp.now(),
-      };
-
-      // Add the new document to the 'actions' collection.
-      await addDoc(collection(db, 'actions'), newAction);
-
-      // Reset the form, hide it, and refresh the actions list.
+      if (editingAction) {
+        const actionRef = doc(db, 'actions', editingAction.id);
+        await updateDoc(actionRef, processedData);
+        alert('Action updated successfully!');
+        setEditingAction(null);
+      } else {
+        await addDoc(collection(db, 'actions'), { ...processedData, assignedDate: Timestamp.now() });
+      }
       setShowForm(false);
-      setFormData({ description: '', ownerName: '', dueDate: '', status: 'Yet to Start', eventId: '' });
-      fetchActionsAndEvents(); // Re-fetch all data to show the new action.
+      fetchActionsAndEvents();
     } catch (err) {
-      console.error('❌ Error adding new action:', err);
-      alert('Failed to add action.');
+      console.error('❌ Error saving action:', err);
+      alert('Failed to save action.');
     }
   };
+  
+  const handleEditClick = (action) => {
+    setEditingAction(action);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingAction(null);
+    setShowForm(false);
+  };
 
-
+  // ✅ CHANGED: This new handler manages adding/removing statuses from the filter array.
+  const handleStatusChange = (status) => {
+    setStatusFilter(prev =>
+      prev.includes(status)
+        ? prev.filter(s => s !== status) // If status is already in, remove it
+        : [...prev, status] // Otherwise, add it
+    );
+  };
+  
   const statusOptions = ["In progress", "Completed", "Suspended", "Yet to Start", "Not Applicable"];
 
   return (
     <div style={{ padding: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 className="text-3xl font-bold">Global Action Tracker</h2>
-        {/* ✨ NEW: Button to toggle the form visibility. */}
-        <button onClick={() => setShowForm(prev => !prev)}>
-          {showForm ? 'Cancel' : '➕ Add New Action'}
+        <button onClick={() => { setEditingAction(null); setShowForm(prev => !prev); }}>
+          {showForm && !editingAction ? 'Cancel' : '➕ Add New Action'}
         </button>
       </div>
-      <p className="mb-6">View all tasks and actions across all events and projects.</p>
 
-      {/* ✨ NEW: The form for adding a new action, shown conditionally. */}
-      {showForm && (
-        <div style={{ marginBottom: '2rem', border: '1px solid #ccc', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h4>Add New Action Item</h4>
+      {(showForm || editingAction) && (
+        <div ref={formRef} style={{ marginBottom: '2rem', border: '1px solid #ccc', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <h4>{editingAction ? 'Edit Action Item' : 'Add New Action Item'}</h4>
           <input type="text" name="description" placeholder="Action Description*" value={formData.description} onChange={handleInputChange} />
           <input type="text" name="ownerName" placeholder="Action Owner" value={formData.ownerName} onChange={handleInputChange} />
           <input type="date" name="dueDate" placeholder="Due Date" value={formData.dueDate} onChange={handleInputChange} />
@@ -135,40 +155,73 @@ const ActionTrackerPage = () => {
               <option key={event.id} value={event.id}>{event.eventName}</option>
             ))}
           </select>
-          <button onClick={handleAddAction} style={{ alignSelf: 'flex-start' }}>✅ Submit Action</button>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button onClick={handleFormSubmit} style={{ alignSelf: 'flex-start' }}>
+              {editingAction ? '💾 Update Action' : '✅ Submit Action'}
+            </button>
+            {editingAction && (
+              <button onClick={handleCancelEdit}>Cancel</button>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Filter controls section (Unchanged) */}
-      <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        {/* ... filter inputs are unchanged ... */}
+      {/* ✅ CHANGED: The filter UI is now a set of checkboxes. */}
+      <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '2rem' }}>
         <input type="text" placeholder="Filter by Owner Name..." value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)} style={{ padding: '0.5rem', width: '250px' }}/>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ padding: '0.5rem' }} >
-          <option value="">All Statuses</option>
-          {statusOptions.map(status => ( <option key={status} value={status}>{status}</option> ))}
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <strong>Status:</strong>
+          {statusOptions.map(status => (
+            <label key={status} style={{ cursor: 'pointer', userSelect: 'none' }}>
+              <input
+                type="checkbox"
+                checked={statusFilter.includes(status)}
+                onChange={() => handleStatusChange(status)}
+                style={{ marginRight: '0.25rem' }}
+              />
+              {status}
+            </label>
+          ))}
+        </div>
       </div>
 
-      {/* Data Table (Unchanged) */}
       {loading ? ( <p>Loading actions...</p> ) : (
         <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%' }}>
-          {/* ... table is unchanged ... */}
-          <thead><tr><th>Description</th><th>Owner</th><th>Due Date</th><th>Status</th><th>Related Event</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Owner</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Related Event</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
           <tbody>
             {filteredActions.length > 0 ? (
-              filteredActions.map(action => (
-                <tr key={action.id}>
-                  <td>{action.description || '—'}</td>
-                  <td>{action.ownerName || '—'}</td>
-                  <td>{action.dueDate?.toDate().toLocaleDateString() || '—'}</td>
-                  <td>{action.status || '—'}</td>
-                  <td>
-                    {action.eventId ? ( <Link to={`/events/${action.eventId}`} style={{ color: 'blue' }}>View Event</Link>) : ('N/A')}
-                  </td>
-                </tr>
-              ))
+              filteredActions.map(action => {
+                const relatedEvent = events.find(e => e.id === action.eventId);
+                return (
+                  <tr key={action.id}>
+                    <td>{action.description || '—'}</td>
+                    <td>{action.ownerName || '—'}</td>
+                    <td>{action.dueDate?.toDate().toLocaleDateString() || '—'}</td>
+                    <td>{action.status || '—'}</td>
+                    <td>
+                      {action.eventId && relatedEvent ? (
+                        <Link to={`/events/${action.eventId}`} style={{ color: 'blue' }}>
+                          {relatedEvent.eventName}
+                        </Link>
+                      ) : ( 'N/A' )}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={() => handleEditClick(action)}>Edit</button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
-              <tr><td colSpan="5" style={{ textAlign: 'center' }}>No actions match the current filters.</td></tr>
+              <tr><td colSpan="6" style={{ textAlign: 'center' }}>No actions match the current filters.</td></tr>
             )}
           </tbody>
         </table>

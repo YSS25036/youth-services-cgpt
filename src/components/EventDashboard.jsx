@@ -1,39 +1,67 @@
-// src/components/EventDashboard.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Link } from 'react-router-dom';
 
 const EventDashboard = () => {
   const [events, setEvents] = useState([]);
+  // ✅ NEW: State to hold related data for calculations.
+  const [participations, setParticipations] = useState([]);
+  const [actions, setActions] = useState([]);
+  
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    eventName: '',
-    eventDate: '',
-    location: '',
-    description: '',
-    mode: '',
-    ageGroup: '',
-    context: '',
+    eventName: '', eventDate: '', location: '', description: '',
+    mode: '', ageGroup: '', context: '',
   });
 
-  const fetchEvents = async () => {
+  // ✅ NEW: Fetch all necessary data when the component loads.
+  const fetchAllData = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, 'events'));
-      const eventData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const [eventsSnap, participationsSnap, actionsSnap] = await Promise.all([
+        getDocs(collection(db, 'events')),
+        getDocs(collection(db, 'event_participation')),
+        getDocs(collection(db, 'actions'))
+      ]);
+
+      const eventData = eventsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const participationData = participationsSnap.docs.map(doc => doc.data());
+      const actionData = actionsSnap.docs.map(doc => doc.data());
+
       setEvents(eventData);
-      console.log('✅ Events fetched:', eventData);
+      setParticipations(participationData);
+      setActions(actionData);
     } catch (error) {
-      console.error('❌ Error fetching events:', error);
+      console.error('❌ Error fetching data:', error);
     }
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchAllData();
   }, []);
+  
+  // ✅ NEW: Use useMemo to efficiently calculate the counts for each event.
+  // This code runs only when the source data changes.
+  const enrichedEvents = useMemo(() => {
+    const openActionStatuses = ['In progress', 'Yet to Start'];
+
+    return events.map(event => {
+      // Calculate the number of volunteers assigned to this event.
+      const volunteersAssigned = participations.filter(p => p.eventId === event.id).length;
+
+      // Calculate the number of open actions for this event.
+      const openActions = actions.filter(a => 
+        a.eventId === event.id && openActionStatuses.includes(a.status)
+      ).length;
+
+      return {
+        ...event,
+        volunteersAssigned,
+        openActions,
+      };
+    });
+  }, [events, participations, actions]);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,16 +72,11 @@ const EventDashboard = () => {
     try {
       await addDoc(collection(db, 'events'), formData);
       setFormData({
-        eventName: '',
-        eventDate: '',
-        location: '',
-        description: '',
-        mode: '',
-        ageGroup: '',
-        context: '',
+        eventName: '', eventDate: '', location: '', description: '',
+        mode: '', ageGroup: '', context: '',
       });
       setShowForm(false);
-      fetchEvents(); // Refresh list
+      fetchAllData(); // Refresh all data after adding a new event
     } catch (err) {
       console.error('❌ Error adding event:', err);
     }
@@ -61,12 +84,13 @@ const EventDashboard = () => {
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h2>📆 Events</h2>
-
-      <button onClick={() => setShowForm(prev => !prev)} style={{ marginBottom: '1rem' }}>
-        {showForm ? 'Cancel' : '➕ Add New Event'}
-      </button>
-
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>📆 Events Dashboard</h2>
+        <button onClick={() => setShowForm(prev => !prev)} style={{ marginBottom: '1rem' }}>
+          {showForm ? 'Cancel' : '➕ Add New Event'}
+        </button>
+      </div>
+      
       {showForm && (
         <div style={{ marginBottom: '2rem', border: '1px solid #ccc', padding: '1rem' }}>
           <h4>Add New Event</h4>
@@ -82,39 +106,35 @@ const EventDashboard = () => {
         </div>
       )}
 
-      {events.length === 0 ? (
-        <p>No events available.</p>
-      ) : (
-        <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Date</th>
-              <th>Location</th>
-              <th>Mode</th>
-              <th>Age Group</th>
-              <th>Details</th>
+      <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Date</th>
+            {/* ✅ NEW: Added table headers */}
+            <th style={{ textAlign: 'center' }}>Volunteers Assigned</th>
+            <th style={{ textAlign: 'center' }}>Open Actions</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* We now map over the new 'enrichedEvents' array */}
+          {enrichedEvents.map(event => (
+            <tr key={event.id}>
+              <td>{event.eventName}</td>
+              <td>{event.eventDate}</td>
+              {/* ✅ NEW: Added table data cells */}
+              <td style={{ textAlign: 'center' }}>{event.volunteersAssigned}</td>
+              <td style={{ textAlign: 'center' }}>{event.openActions}</td>
+              <td>
+                <Link to={`/events/${event.id}`}>View</Link>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {events.map(event => (
-              <tr key={event.id}>
-                <td>{event.eventName}</td>
-                <td>{event.eventDate}</td>
-                <td>{event.location}</td>
-                <td>{event.mode}</td>
-                <td>{event.ageGroup}</td>
-                <td>
-                  <Link to={`/events/${event.id}`}>View</Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 };
 
 export default EventDashboard;
-

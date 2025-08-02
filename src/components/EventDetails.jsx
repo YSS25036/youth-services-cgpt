@@ -38,7 +38,8 @@ const EventDetails = () => {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
   const [actions, setActions] = useState([]);
-  const [volunteers, setVolunteers] = useState([]);
+  const [assignedVolunteers, setAssignedVolunteers] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showActionForm, setShowActionForm] = useState(false);
   const [actionFormData, setActionFormData] = useState({ description: '', ownerName: '', dueDate: '', status: 'Yet to Start' });
@@ -52,19 +53,20 @@ const EventDetails = () => {
       if (!eventId) return;
       setLoading(true);
       try {
-        // Fetch the main event document
+        const deptsSnapshot = await getDocs(collection(db, 'departments'));
+        const deptsList = deptsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setDepartments(deptsList);
+
         const eventDoc = await getDoc(doc(db, 'events', eventId));
         if (eventDoc.exists()) {
           setEvent({ id: eventDoc.id, ...eventDoc.data() });
         }
 
-        // Fetch all related data in parallel
         await Promise.all([
           fetchActions(eventId),
-          fetchVolunteers(eventId),
+          fetchAssignedVolunteers(eventId, deptsList),
           fetchManualLinks(eventId)
         ]);
-
       } catch (err) {
         console.error('❌ Error loading event details:', err);
       } finally {
@@ -74,36 +76,44 @@ const EventDetails = () => {
     fetchAllData();
   }, [eventId]);
 
-  // Fetches actions from the top-level 'actions' collection.
   const fetchActions = async (currentEventId) => {
     const actionsQuery = query(collection(db, 'actions'), where('eventId', '==', currentEventId), orderBy('assignedDate', 'desc'));
     const actionsSnapshot = await getDocs(actionsQuery);
     setActions(actionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  // Fetches assigned volunteers efficiently.
-  const fetchVolunteers = async (currentEventId) => {
+  const fetchAssignedVolunteers = async (currentEventId, deptsList) => {
     const participationQuery = query(collection(db, 'event_participation'), where('eventId', '==', currentEventId));
     const participationSnap = await getDocs(participationQuery);
-    const volunteerIds = participationSnap.docs.map(p => p.data().volunteerId);
+    const participations = participationSnap.docs.map(p => ({ ...p.data(), id: p.id }));
+    const volunteerIds = participations.map(p => p.volunteerId);
 
     if (volunteerIds.length > 0) {
       const volunteersQuery = query(collection(db, 'volunteers'), where(documentId(), 'in', volunteerIds.slice(0, 30)));
       const volunteersSnapshot = await getDocs(volunteersQuery);
-      setVolunteers(volunteersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const volunteersData = volunteersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const combinedDetails = participations.map(p => {
+        const volunteerInfo = volunteersData.find(v => v.id === p.volunteerId);
+        const departmentInfo = deptsList.find(d => d.id === p.departmentId);
+        return {
+          ...volunteerInfo,
+          departmentName: departmentInfo ? departmentInfo.name : 'N/A',
+          assignedRoles: p.assignedRoles || [],
+        };
+      });
+      setAssignedVolunteers(combinedDetails);
     } else {
-      setVolunteers([]);
+      setAssignedVolunteers([]);
     }
   };
-  
-  // Fetches manual links from the 'manualLinks' sub-collection.
+
   const fetchManualLinks = async (currentEventId) => {
     const linksQuery = query(collection(db, 'events', currentEventId, 'manualLinks'), orderBy('createdAt', 'desc'));
     const linksSnapshot = await getDocs(linksQuery);
     setManualLinks(linksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
   };
 
-  // All form input handlers are fully implemented.
   const handleActionFormChange = (e) => {
     const { name, value } = e.target;
     setActionFormData(prev => ({ ...prev, [name]: value }));
@@ -114,18 +124,16 @@ const EventDetails = () => {
     setLinkFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // All data submission handlers are fully implemented.
   const handleAddAction = async () => {
     if (!actionFormData.description) {
       alert('Please enter a description for the action.');
       return;
     }
     try {
-      const actionsCollectionRef = collection(db, 'actions');
-      await addDoc(actionsCollectionRef, {
+      await addDoc(collection(db, 'actions'), {
         ...actionFormData,
         dueDate: actionFormData.dueDate ? Timestamp.fromDate(new Date(actionFormData.dueDate)) : null,
-        assignedDate: Timestamp.now(), 
+        assignedDate: Timestamp.now(),
         eventId: eventId,
       });
       setShowActionForm(false);
@@ -143,8 +151,7 @@ const EventDetails = () => {
       return;
     }
     try {
-      const linksCollectionRef = collection(db, 'events', eventId, 'manualLinks');
-      await addDoc(linksCollectionRef, {
+      await addDoc(collection(db, 'events', eventId, 'manualLinks'), {
         ...linkFormData,
         createdAt: Timestamp.now(),
       });
@@ -157,7 +164,6 @@ const EventDetails = () => {
     }
   };
 
-  // All style and option variables are fully implemented.
   const statusOptions = ["In progress", "Completed", "Suspended", "Yet to Start", "Not Applicable"];
   const headerStyles = {
     details: { backgroundColor: '#3B82F6', color: 'white' },
@@ -169,7 +175,6 @@ const EventDetails = () => {
   if (loading) return <p>Loading event details...</p>;
   if (!event) return <p>Event not found.</p>;
 
-  // This is the full and final JSX for the component.
   return (
     <div style={{ padding: '2rem' }}>
       <Link to="/events" style={{ marginBottom: '1rem', display: 'inline-block' }}>
@@ -222,12 +227,22 @@ const EventDetails = () => {
       </CollapsibleSection>
       
       <CollapsibleSection title="Assigned Volunteers" defaultOpen={false} headerStyle={headerStyles.volunteers}>
-        {volunteers.length > 0 ? (
+        {assignedVolunteers.length > 0 ? (
           <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%' }}>
-            <thead><tr><th>Name</th><th>City</th><th>Skills</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Assigned Roles</th>
+              </tr>
+            </thead>
             <tbody>
-              {volunteers.map(vol => (
-                <tr key={vol.id}><td>{vol.name}</td><td>{vol.city}</td><td>{vol.skills}</td></tr>
+              {assignedVolunteers.map((vol, index) => (
+                <tr key={vol.id || index}>
+                  <td>{vol.name}</td>
+                  <td>{vol.departmentName}</td>
+                  <td>{vol.assignedRoles.join(', ')}</td>
+                </tr>
               ))}
             </tbody>
           </table>

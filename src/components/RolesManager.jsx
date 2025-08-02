@@ -1,14 +1,14 @@
 // src/components/RolesManager.jsx
 
-import React, { useState, useEffect } from 'react';
-// ✅ FIXED: Added 'query' to the list of imports from firestore.
-import { collection, getDocs, addDoc, deleteDoc, doc, orderBy, query } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, getDocs, addDoc, deleteDoc, doc, orderBy, query, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const RolesManager = () => {
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingRole, setEditingRole] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     departmentId: '',
@@ -18,6 +18,25 @@ const RolesManager = () => {
     timeCommitment: '',
     comments: '',
   });
+
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    if (editingRole) {
+      setFormData({
+        name: editingRole.name || '',
+        departmentId: editingRole.departmentId || '',
+        category: editingRole.category || '',
+        responsibilities: editingRole.responsibilities || '',
+        preferredSkills: editingRole.preferredSkills?.join(', ') || '',
+        timeCommitment: editingRole.timeCommitment || '',
+        comments: editingRole.comments || '',
+      });
+      formRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      setFormData({ name: '', departmentId: '', category: '', responsibilities: '', preferredSkills: '', timeCommitment: '', comments: '' });
+    }
+  }, [editingRole]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -30,11 +49,9 @@ const RolesManager = () => {
       const rolesSnapshot = await getDocs(rolesQuery);
       const rolesList = rolesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRoles(rolesList);
-
     } catch (error) {
       console.error("❌ Failed to fetch data:", error);
       alert("Failed to load data. Please check the console for errors.");
-
     } finally {
       setLoading(false);
     }
@@ -49,21 +66,30 @@ const RolesManager = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleAddRole = async () => {
+  const handleFormSubmit = async () => {
     if (!formData.name || !formData.departmentId) {
       alert('Please provide a Role Name and select a Department.');
       return;
     }
+
+    const processedData = {
+      ...formData,
+      preferredSkills: formData.preferredSkills.split(',').map(skill => skill.trim()).filter(Boolean),
+    };
+
     try {
-      await addDoc(collection(db, 'roles'), {
-        ...formData,
-        preferredSkills: formData.preferredSkills.split(',').map(skill => skill.trim()).filter(Boolean),
-      });
-      setFormData({ name: '', departmentId: '', category: '', responsibilities: '', preferredSkills: '', timeCommitment: '', comments: '' });
+      if (editingRole) {
+        const roleRef = doc(db, 'roles', editingRole.id);
+        await updateDoc(roleRef, processedData);
+        alert('Role updated successfully.');
+        setEditingRole(null);
+      } else {
+        await addDoc(collection(db, 'roles'), processedData);
+      }
       fetchData();
     } catch (err) {
-      console.error("Error adding role: ", err);
-      alert('Failed to add role.');
+      console.error("Error saving role: ", err);
+      alert('Failed to save role.');
     }
   };
 
@@ -89,8 +115,8 @@ const RolesManager = () => {
     <div style={{ padding: '2rem' }}>
       <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>Manage Roles</h2>
 
-      <div style={{ padding: '1.5rem', border: '1px solid #ccc', borderRadius: '8px', marginBottom: '2rem' }}>
-        <h3 style={{ marginTop: 0 }}>Add New Role</h3>
+      <div ref={formRef} style={{ padding: '1.5rem', border: '1px solid #ccc', borderRadius: '8px', marginBottom: '2rem' }}>
+        <h3 style={{ marginTop: 0 }}>{editingRole ? 'Edit Role' : 'Add New Role'}</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <input name="name" placeholder="Role Name*" value={formData.name} onChange={handleInputChange} style={{ padding: '0.5rem' }} />
           <select name="departmentId" value={formData.departmentId} onChange={handleInputChange} style={{ padding: '0.5rem' }}>
@@ -105,7 +131,12 @@ const RolesManager = () => {
           <input name="preferredSkills" placeholder="Preferred Skills (comma-separated)" value={formData.preferredSkills} onChange={handleInputChange} style={{ padding: '0.5rem', gridColumn: '1 / -1' }} />
           <textarea name="comments" placeholder="Comments" value={formData.comments} onChange={handleInputChange} style={{ padding: '0.5rem', gridColumn: '1 / -1' }} />
         </div>
-        <button onClick={handleAddRole} style={{ marginTop: '1rem' }}>➕ Add Role</button>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
+          <button onClick={handleFormSubmit}>{editingRole ? '💾 Update Role' : '➕ Add Role'}</button>
+          {editingRole && (
+            <button onClick={() => setEditingRole(null)}>Cancel Edit</button>
+          )}
+        </div>
       </div>
 
       <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%' }}>
@@ -125,7 +156,8 @@ const RolesManager = () => {
               <td>{getDepartmentName(role.departmentId)}</td>
               <td>{role.category}</td>
               <td>{role.preferredSkills?.join(', ')}</td>
-              <td style={{ textAlign: 'center' }}>
+              <td style={{ textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                <button onClick={() => setEditingRole(role)} style={{ color: 'blue' }}>Edit</button>
                 <button onClick={() => handleDeleteRole(role.id)} style={{ color: 'red' }}>Delete</button>
               </td>
             </tr>
