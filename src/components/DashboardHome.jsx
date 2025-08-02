@@ -17,7 +17,7 @@ const DashboardHome = () => {
       <main className="max-w-6xl mx-auto px-6 py-12">
         {/* Welcome Text */}
         <div className="mb-10 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-3">Welcome to the Youth Services IMS</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Welcome to the Youth Services Information Management System</h2>
           <p className="text-lg text-gray-600">Manage your volunteers, programs, and resources with ease.</p>
         </div>
 

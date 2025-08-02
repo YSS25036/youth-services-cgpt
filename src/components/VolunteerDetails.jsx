@@ -46,42 +46,51 @@ const VolunteerDetails = () => {
     fetchVolunteerData();
   }, [volunteerId]);
 
-  if (loading) return <p>Loading volunteer details...</p>;
-  if (!volunteer) return <p>Volunteer not found.</p>;
+  if (loading) return <p className="text-gray-600">Loading volunteer details...</p>;
+  if (!volunteer) return <p className="text-red-500">Volunteer not found.</p>;
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h2>{volunteer.name}'s Event Assignments</h2>
-      <p><strong>Lesson #:</strong> {volunteer.lessonNumber}</p>
-      <p><strong>City:</strong> {volunteer.city}</p>
-      <p><strong>Kendra:</strong> {volunteer.kendra}</p>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold mb-4">{volunteer.name}'s Event Assignments</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-gray-700">
+          <div><strong>Lesson #:</strong> {volunteer.lessonNumber}</div>
+          <div><strong>City:</strong> {volunteer.city}</div>
+          <div><strong>Kendra:</strong> {volunteer.kendra}</div>
+        </div>
+      </div>
 
-      {assignedEvents.length === 0 ? (
-        <p>No current assignments.</p>
-      ) : (
-        <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%', marginTop: '1rem' }}>
-          <thead>
-            <tr>
-              <th>Event</th>
-              <th>Date</th>
-              <th>Location</th>
-              <th>Mode</th>
-              <th>Age Group</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assignedEvents.map(ev => (
-              <tr key={ev.id}>
-                <td>{ev.eventName}</td>
-                <td>{ev.eventDate}</td>
-                <td>{ev.location}</td>
-                <td>{ev.mode}</td>
-                <td>{ev.ageGroup}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-xl font-semibold mb-4">Assigned Programs</h3>
+        {assignedEvents.length === 0 ? (
+          <p className="text-gray-600">No current assignments.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-200 divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Program</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Date</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Location</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Mode</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Age Group</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {assignedEvents.map(ev => (
+                  <tr key={ev.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">{ev.eventName}</td>
+                    <td className="px-4 py-2">{ev.eventDate}</td>
+                    <td className="px-4 py-2">{ev.location}</td>
+                    <td className="px-4 py-2">{ev.mode}</td>
+                    <td className="px-4 py-2">{ev.ageGroup}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

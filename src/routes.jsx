@@ -10,6 +10,7 @@ import VolunteerDetails from './components/VolunteerDetails';
 import ActionTrackerPage from './components/ActionTrackerPage';
 import RolesManager from './components/RolesManager';
 import CreateProgram from './components/CreateProgram';
+import Resources from './components/Resources';
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: '/actions', element: <ActionTrackerPage />},
       { path: '/roles-manager', element: <RolesManager />},
       { path: '/create-event', element: <CreateProgram /> },
+      { path: '/resources', element: <Resources /> },	
       { path: '/assign', element: <AssignVolunteers /> },
     ],
   },
