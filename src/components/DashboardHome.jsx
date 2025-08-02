@@ -1,51 +1,59 @@
-// In src/components/DashboardHome.jsx
-
+// src/components/DashboardHome.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 
 const DashboardHome = () => {
-  const tileStyle = {
-    width: '250px',
-    height: '150px',
-    margin: '1rem',
-    padding: '1rem',
-    border: '1px solid #ccc',
-    borderRadius: '12px',
-    boxShadow: '2px 2px 10px rgba(0,0,0,0.1)',
-    textAlign: 'center',
-    textDecoration: 'none',
-    color: '#000',
-    background: '#f9f9f9',
-  };
-
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>Youth Services IMS</h1>
-      <div style={{ display: 'flex', flexWrap: 'wrap' }}>
-        <Link to="/volunteers" style={tileStyle}>
-          <h3>Volunteers</h3>
-          <p>View & filter volunteers</p>
-        </Link>
-        <Link to="/events" style={tileStyle}>
-          <h3>Events</h3>
-          <p>Create and view events</p>
-        </Link>
-        {/* NEW TILE ADDED BELOW */}
-        <Link to="/actions" style={tileStyle}>
-          <h3>Action Tracker</h3>
-          <p>View all assigned tasks</p>
-        </Link>
-        <Link to="/assign" style={tileStyle}>
-          <h3>Assign Volunteers</h3>
-          <p>Map volunteers to events</p>
-        </Link>
-        <Link to="/roles-manager" style={tileStyle}>
-          <h3>Manage Roles</h3>
-          <p>Manage Roles within corresponding Departments</p>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white">
+      {/* Banner Header */}
+      <header className="bg-orange-600 text-white py-6 shadow-md">
+        <div className="max-w-6xl mx-auto px-6">
+          <h1 className="text-3xl font-semibold">Youth Services IMS</h1>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        {/* Welcome Text */}
+        <div className="mb-10 text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Welcome to the Youth Services IMS</h2>
+          <p className="text-lg text-gray-600">Manage your volunteers, programs, and resources with ease.</p>
+        </div>
+
+        {/* Large Tiles */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Link to="/volunteers">
+            <Card className="hover:shadow-xl hover:-translate-y-1 transition-all h-48 flex flex-col justify-center items-center">
+              <CardContent className="p-6 text-center">
+                <CardTitle className="text-2xl mb-2">Volunteers</CardTitle>
+                <p className="text-base text-gray-600">Manage and assign volunteers</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/events">
+            <Card className="hover:shadow-xl hover:-translate-y-1 transition-all h-48 flex flex-col justify-center items-center">
+              <CardContent className="p-6 text-center">
+                <CardTitle className="text-2xl mb-2">Programs</CardTitle>
+                <p className="text-base text-gray-600">View and organize your programs</p>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link to="/resources">
+            <Card className="hover:shadow-xl hover:-translate-y-1 transition-all h-48 flex flex-col justify-center items-center">
+              <CardContent className="p-6 text-center">
+                <CardTitle className="text-2xl mb-2">Resources</CardTitle>
+                <p className="text-base text-gray-600">Files, guides, and more</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+      </main>
     </div>
   );
 };
 
 export default DashboardHome;
+

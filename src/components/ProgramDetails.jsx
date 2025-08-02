@@ -68,7 +68,7 @@ const EventDetails = () => {
           fetchManualLinks(eventId)
         ]);
       } catch (err) {
-        console.error('❌ Error loading event details:', err);
+        console.error('❌ Error loading program details:', err);
       } finally {
         setLoading(false);
       }
@@ -172,17 +172,17 @@ const EventDetails = () => {
     documents: { backgroundColor: '#8B5CF6', color: 'white' },
   };
 
-  if (loading) return <p>Loading event details...</p>;
-  if (!event) return <p>Event not found.</p>;
+  if (loading) return <p>Loading program details...</p>;
+  if (!event) return <p>Program not found.</p>;
 
   return (
     <div style={{ padding: '2rem' }}>
       <Link to="/events" style={{ marginBottom: '1rem', display: 'inline-block' }}>
-        ← Back to Events Dashboard
+        ← Back to Programs Dashboard
       </Link>
       <h2 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>{event.eventName}</h2>
       
-      <CollapsibleSection title="Event Details" headerStyle={headerStyles.details}>
+      <CollapsibleSection title="Program Details" headerStyle={headerStyles.details}>
         <p><strong>Date:</strong> {event.eventDate || '—'}</p>
         <p><strong>Location:</strong> {event.location || '—'}</p>
         <p><strong>Mode:</strong> {event.mode || '—'}</p>
@@ -199,7 +199,7 @@ const EventDetails = () => {
         </div>
         {showActionForm && (
           <div style={{ marginBottom: '2rem', border: '1px solid #ccc', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <h4>Add New Action for this Event</h4>
+            <h4>Add New Action for this Program</h4>
             <input type="text" name="description" placeholder="Action Description*" value={actionFormData.description} onChange={handleActionFormChange} style={{ padding: '0.5rem' }}/>
             <input type="text" name="ownerName" placeholder="Action Owner" value={actionFormData.ownerName} onChange={handleActionFormChange} style={{ padding: '0.5rem' }}/>
             <input type="date" name="dueDate" value={actionFormData.dueDate} onChange={handleActionFormChange} style={{ padding: '0.5rem' }}/>
@@ -223,7 +223,7 @@ const EventDetails = () => {
               ))}
             </tbody>
           </table>
-        ) : <p>No actions are currently tracked for this event.</p>}
+        ) : <p>No actions are currently tracked for this program.</p>}
       </CollapsibleSection>
       
       <CollapsibleSection title="Assigned Volunteers" defaultOpen={false} headerStyle={headerStyles.volunteers}>
@@ -246,7 +246,7 @@ const EventDetails = () => {
               ))}
             </tbody>
           </table>
-        ) : <p>No volunteers have been assigned to this event.</p>}
+        ) : <p>No volunteers have been assigned to this program.</p>}
       </CollapsibleSection>
 
       <CollapsibleSection title="Related Documents" defaultOpen={false} headerStyle={headerStyles.documents}>

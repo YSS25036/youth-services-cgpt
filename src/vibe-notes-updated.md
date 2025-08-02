@@ -3,19 +3,10 @@
 _This markdown captures module ideas, CSV structures, pending items, and spiritual reflections during development._
 
 ---
-Please provide the complete, final code for the file
 
 ## ✅ To-Do Checklist
 
-- [x]  Create a Event Details page that contains multiple collapsible section
-		- One is the basic Event Details
-		- Second is the Action Tracker against the event
-		- Third is all related documents for it (linking to a Google drive that has documents)
-- [x ] Create an Action Tracker that is overall and specific to Events
-		- Action Tracker fields (Action Owner, Date Assigned, Due Date, Description of Action, Status of Action (In progress, completed, suspended, Yet to Start, Not Applicable)
-		The link to Tracker should be on the Home Page
-		- Each Event has to have actions specific to it and displayed in the Event Details page
-		- Actions can be further filtered by Name, Due Date
+- [ ] Do beautification changes to make the application UI look slick and nice
 - [ ] Add age group filter to EventDashboard
 - [ ] Create CSV template for Event Attendance
 - [ ] Fix tag-based search for skills
@@ -53,35 +44,9 @@ Please provide the complete, final code for the file
 
 ## 🧱 New Module Ideas
 
-- Departments need to be created. The department values are
-	- Communications & Outreach
-	- Volunteer coordination
-	- Programs & Operations
-	- YS Support for Centers,Online
-	- Training & Content
-
-- There are many roles, that are mapped to department. Following are the entries for Roles:
-	Role Name
-	Role Category 	
-	Roles & Responsibilities (string)	
-	Preferred Skills (independent tags that allows multi-select & search)	
-	Time commitment needed (days per week)	
-	Comments (string)
-
-- On the Volunteers page, right on top display a summary of all Volunteers and show a breakup side by side count of men & women 
-- A form with relevant fields to add a new volunteer
-- A page to enumerate all relevant skills of volunteers, this is like a master database of skills
 - Role Based Access (Administrator, Portal user, YS Core Member)
 - An API look up to the Parent Organization (Yogoda Satsanga Society of India) IT system to look up lesson number based on phone number
-- An API look up to the Parent Organization (Yogoda Satsanga Society of India) IT system to look up phone number based on lesson number 
-- Like Skills, maintain a Roles Database that can be assigned to different volunteers like the following - 
-	- Facilitator
-	- Asst. Facilitator
-	- Trainer
-	- Group Discussion Leader
-	- Group Leader
-	- Writer 
-	- IT Ops
+- An API look up to the Parent Organization (Yogoda Satsanga Society of India) IT system to look up phone number based on lesson number
 - Document Hub
 	- Shows most used and important documents like vision statements, organization structure
 	- Links to Google Drive to show document navigator and ability to search for documents
@@ -133,7 +98,7 @@ Let this be built in the spirit of seva, with simplicity and sincerity.
 - GitHub Repo: `https://github.com/YSS25036/youth-services-cgpt`
 
 
-## ✅ Completed Work (as of 2025-07-28)
+## ✅ Completed Work (as of 2025-08-02)
 
 ### ✅ VIBE 0: Setup & Hosting
 - Firebase project created and site deployed successfully
@@ -148,18 +113,34 @@ Let this be built in the spirit of seva, with simplicity and sincerity.
 ### ✅ VIBE 2: Volunteer Management
 - Volunteer data imported via CSV
 - Firestore integration confirmed with correct schema
-- Admin dashboard built with:
-  - Filtering by city and search
-  - Display of all volunteer fields including skills and lesson number
+- Admin dashboard built with basic filtering
 
 ### ✅ VIBE 3: Event Management
 - Event dashboard UI built
 - Events saved to Firestore
 - Clean layout with reusable layout wrapper component
 
-### ✅ VIBE 4.1–4.2: Event Participation Mapping
-- UI wireframe generated and approved
-- EventParticipation.jsx screen generated
-- Data structure finalized for `event_participation` collection
+### ✅ VIBE 4: Core Features & Linking
+- Event Details page created with collapsible sections for details, actions, volunteers, and documents.
+- Overall Action Tracker page created with filters.
+- Actions can be added/edited from both the global tracker and the specific event details page.
+- Manual document linking implemented on the Event Details page.
+- Department and detailed Role structure designed and implemented in Firestore.
 
-
+### ✅ VIBE 5: Usability & Dashboard Enhancements
+- **Roles:** Created a `RolesManager` page with full Add, Edit, and Delete functionality.
+- **Volunteer Assignment:**
+    - Revamped the `AssignVolunteers` page with a modal for selecting Departments and Roles.
+    - Added the ability to Edit an existing volunteer's assignment.
+- **Volunteer Dashboard:**
+    - Added a summary stats section (Total, Male/Female, Assigned/Unassigned).
+    - Added a filter for "Assigned" and "Unassigned" volunteers.
+    - Fixed table column alignment.
+- **Event Dashboard:**
+    - Added "Volunteers Assigned" and "Open Actions" columns for an at-a-glance summary.
+- **Action Tracker:**
+    - Added an "Edit" button for existing actions.
+    - Upgraded the status filter to be a multi-select checkbox group.
+    - Changed the "Related Event" column to show the clickable event name instead of just a link.
+- **Event Details Page:**
+    - Updated the "Assigned Volunteers" table to include Department and Role columns.
